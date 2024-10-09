@@ -12,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 public class TodoController {
@@ -37,5 +39,14 @@ public class TodoController {
     @GetMapping("/todos/{todoId}")
     public ResponseEntity<TodoResponse> getTodo(@PathVariable long todoId) {
         return ResponseEntity.ok(todoService.getTodo(todoId));
+    }
+
+    @GetMapping("/todos/search")
+    public ResponseEntity<List<TodoResponse>> getTodoByWeatherAndPeriod(
+            @RequestParam String weather,
+            @RequestParam String startDate,
+            @RequestParam String endDate
+    ) {
+        return ResponseEntity.ok(todoService.getTodoSearchResults(weather,startDate,endDate));
     }
 }

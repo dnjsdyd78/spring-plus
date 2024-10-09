@@ -11,11 +11,19 @@ import org.example.expert.domain.todo.entity.Todo;
 import org.example.expert.domain.todo.repository.TodoRepository;
 import org.example.expert.domain.user.dto.response.UserResponse;
 import org.example.expert.domain.user.entity.User;
+import org.hibernate.validator.constraintvalidators.RegexpURLValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -79,5 +87,52 @@ public class TodoService {
                 todo.getCreatedAt(),
                 todo.getModifiedAt()
         );
+    }
+
+    public List<TodoResponse> getTodoSearchResults(String weather, String startDate, String endDate) {
+
+        // 공백데이터 허용x, null 값으로 재정의
+        weather = nullIfEmpty(weather);
+        startDate = nullIfEmpty(startDate);
+        endDate = nullIfEmpty(endDate);
+
+        // 조건 검증로직
+        if ((startDate == null && endDate != null) || (startDate != null && endDate == null)) {
+            throw new IllegalArgumentException("시작날짜와 종료날짜가 모두 입력되거나 입력되지 않아야합니다.");
+        }
+
+        // 형변환
+        LocalDateTime fromDate = convertStringToLocalDateTime(startDate);
+        LocalDateTime toDate = convertStringToLocalDateTime(endDate);
+
+
+        List<Todo> todos = todoRepository.findByWeatherAndDate(weather, fromDate, toDate)
+                .orElseThrow(() -> new IllegalArgumentException("조회되는 목록이 없습니다."));
+
+        return todos.stream()
+                .map(todo -> new
+                        TodoResponse(
+                        todo.getId(),
+                        todo.getTitle(),
+                        todo.getContents(),
+                        todo.getWeather(),
+                        new UserResponse(todo.getUser().getId(), todo.getUser().getEmail()),
+                        todo.getCreatedAt(),
+                        todo.getModifiedAt()))
+                .collect(Collectors.toList());
+    }
+
+    // 데이터 공백이면 null 값 반환
+    private String nullIfEmpty(String value) {
+        return (value == null || value.isBlank()) ? null : value;
+    }
+
+    // String => LocalDateTime
+    private LocalDateTime convertStringToLocalDateTime(String value) {
+        try{
+            return (value == null || value.isBlank()) ? null : LocalDate.parse(value).atStartOfDay();
+        }catch (DateTimeParseException e){
+            throw new IllegalArgumentException("날짜데이터 형식이 올바르지 않습니다. yyyy-MM-dd 형식으로 입력해주세요.");
+        }
     }
 }

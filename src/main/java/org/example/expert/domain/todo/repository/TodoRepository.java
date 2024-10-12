@@ -26,5 +26,4 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, TodoQueryRepo
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
-
 }
